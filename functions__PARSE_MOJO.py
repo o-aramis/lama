@@ -86,6 +86,8 @@ def dvij_df():
             df_cleaned = df.dropna()
             print(df_cleaned)
 
+            # вставляем в файл MOJO-базы
+            #df_cleaned.to_csv(MOJO_doc, mode='a', index= False , header= False)
 
             # сохраняем результат парса в файл если данные не битые
             try:

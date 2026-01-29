@@ -14,6 +14,8 @@ from bs4 import BeautifulSoup
 import math
 import zipfile
 import vertica_python
+import tkinter as tk
+import webbrowser
 
 
 from variables import LF_dir
@@ -32,6 +34,7 @@ from variables import MIS_INID_doc
 from variables import MIS_BOOK_doc
 from variables import COM_dir
 from variables import COMPLAINT__SoupPattern_doc
+from variables import COMPLAINT__ManSoupPattern_doc
 from variables import COMPLAINT__SoupToGO_doc
 from variables import COMPLAINT__Soup_Scanit_doc
 from variables import COMPLAINT__Soup_Scanit_Stock_doc
@@ -57,6 +60,7 @@ from variables import QCS_pattern_doc
 from variables import MIS_BOOK__duplicate_check_4_key_list_code
 from variables import MIS_boost_keys_list_code
 from variables import LAMA_archive_cup_dir
+from variables import url_posting_max
 
 from functions__PARSE_MOJO import PARSE_MOJO_GO
 
@@ -370,6 +374,35 @@ if 'LAMA' != '':
                         os.remove(def_kick_doc)
                         MIS_BOOK_OverLimit ()
 
+                    elif def_name == 'MIS_BOOK_KillDay':
+                        os.remove(def_kick_doc)
+                        MIS_BOOK_KillDay ()
+
+                    elif def_name == 'COMPLAINT_ToWork2':
+                        os.remove(def_kick_doc)
+                        COMPLAINT_ToWork2 ()
+
+                    elif def_name == 'COMPLAINT_ManSoupPattern':
+                        os.remove(def_kick_doc)
+                        COMPLAINT_ManSoupPattern ()
+
+                    elif def_name == 'COMPLAINT_SoupToGoFromMan':
+                        os.remove(def_kick_doc)
+                        COMPLAINT_SoupToGoFromMan ()
+
+                    elif def_name == 'COMPLAINT_Flow':
+                        os.remove(def_kick_doc)
+                        COMPLAINT_Flow ()
+
+                        
+
+                    
+
+                    
+
+
+                        
+
                      
 
     def def_initiator (desc, par_list):
@@ -599,10 +632,10 @@ if 'ОБЩИЕ' != '':
             def_name = 'SqlExecuter'
             qu = str(qu)
 
-            con_info = {'host': 'host_name',
+            con_info = {'host': 'vertica-sandbox.s.o3.ru',
                     'port': 5433,
-                    'user': 'login',
-                    'password': 'pass',
+                    'user': 'aramiso',
+                    'password': 'Block261!',
                     'database': 'OLAP',
                     'tlsmode': 'disable'}
         
@@ -621,12 +654,13 @@ if 'ОБЩИЕ' != '':
             for row in qu_res:
                 df.loc[len(df)] = row
             
-            #print(df)
+            
             res = df
 
         except Exception as e:
             res = f'Ошибка функции {def_name}: {e}'
 
+        print(f'Результат функции {def_name}')
         return res
    
 if 'ОСНОВНЫЕ' != '':
@@ -695,7 +729,11 @@ if 'ОСНОВНЫЕ' != '':
                         
 
                         elif file[-4:] == '.csv':
-                            mark = pd.read_csv(file).columns.tolist()[-1][9:]
+                            df = pd.read_csv(file)
+                            if df.columns.tolist()[:3] == ['ArticlePostingID','ArticlePostingType','ArticlePostingName']:
+                                mark = 'complaint_posting_rep_csv'
+                            else:
+                                mark = df.columns.tolist()[-1][9:]
 
                         else:
                             bug_files_list.append(file_name)
@@ -746,6 +784,24 @@ if 'ОСНОВНЫЕ' != '':
                     elif mark == 'CPL':
                         def_initiator('COMPLAINT_CPLUpdating', [file])
 
+                    elif mark == 'complaint_posting_rep_csv':
+                        def_initiator('COMPLAINT_ToWork2', [file])
+
+                    elif mark == 'complaint_man_soup':
+                        def_initiator('COMPLAINT_SoupToGoFromMan', [file])
+
+                        
+
+
+                    
+
+
+                    
+
+
+
+
+                
 
             mes_bug_row = ''
             for f in bug_files_list:
@@ -813,7 +869,7 @@ if 'ОСНОВНЫЕ' != '':
 
                     urls_list = []
                     for x in par_list_clean:
-                        url_dt_ii = 'report_head' + date_s + 'report_body' + date_po + 'report_tail' + x
+                        url_dt_ii = 'https://wmsa-reports.t.o3.ru/movements_journal/?warehouse=0&date_from=' + date_s + '&date_to=' + date_po + '&search_type=barcode&value=' + x
                         urls_list.append(url_dt_ii)
 
                 sn = 'ИНИЦИИРУЮ ПАРСИН MOJO и сохраняю результат'
@@ -1961,6 +2017,67 @@ if 'ОСНОВНЫЕ' != '':
                 shutil.rmtree(cup_dir)
             chat(mes_sender, mes)
 
+        def MIS_BOOK_KillDay ():
+            def_name = 'MIS_BOOK_KillDay'
+            comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+            mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+            cup_dir = CUPS_dir + def_name + '/'
+            try:
+                if 1 == 1:
+                    ErrorCheck = 0
+                    step = 0
+                    step_num = 2
+
+                    def tech_mes(t):
+                        print(t)
+
+                sn = 'ПЕРЕМЕННЫЕ'
+                if sn != '':
+                    try:
+                        print(sn)
+                        INID_df = pd.read_csv(MIS_INID_doc)
+                        BOOK_df = pd.read_csv(MIS_BOOK_doc)
+                        today_str = dt.datetime.now().strftime('%Y-%m-%d')
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+
+                sn = 'НУЛИМ INID за сегодня'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        #####
+                        INID_df = INID_df[INID_df['date'] != today_str]
+                        INID_df.to_csv(MIS_INID_doc, index=False)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+
+                sn = 'НУЛИМ BOOK за сегодня'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        #####
+                        BOOK_df = BOOK_df[BOOK_df['date'] != today_str]
+                        BOOK_df.to_csv(MIS_BOOK_doc, index=False)
+                        mes = 'Готово!'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+
+            except:
+                mes = 'Ошибка! Что-то пошло не так:('
+
+            # удаляем папку процесса
+            if os.path.isdir(cup_dir) == True:
+                shutil.rmtree(cup_dir)
+            chat(mes_sender, mes)
+
     if 'Жалобы' != '':
         
         def COMPLAINT_SHARED_SoupToGo (soup_file):
@@ -1988,6 +2105,9 @@ if 'ОСНОВНЫЕ' != '':
             for i in range(len(clean_list)):
                 if clean_list[i][:6] == 'Задача':
                     s1 = str(clean_list[i])
+                    if s1.count('№') == 2:
+                        index_sym_sec = s1.rfind('№')
+                        s1 = s1[:index_sym_sec] + s1[index_sym_sec + 2:]
                     print(s1)
                     s2 = str(clean_list[i+1])
                     print(s2)
@@ -1998,18 +2118,21 @@ if 'ОСНОВНЫЕ' != '':
                     date_soup_str = s2[s2.index('Изменена') + 9:s2.index('в ') - 1]
                     print(date_soup_str)
                     date_list.append(date_soup_str[-4:] + '-' + mon_df[mon_df['eng_name'] == date_soup_str[3:-5]]['rus_name'].tolist()[0][1:] + '-' + date_soup_str[:2])
+                    print(date_list[-1])
                     
                     # детализация
                     detail = ''
                     s1_tail = s1[s1.index('ID')+3:]
                     for n in range(len(s1_tail)):
-                        if s1_tail[:n].istitle() == True:
+                        if s1_tail[:n].istitle() == True or s1_tail[:n] == ' ':
                             detail = detail + s1_tail[n-1:]
                             break
                     details_list.append(detail)
+                    print(details_list[-1])
 
                     # постинг
-                    posting_list.append(s1[s1.index('Постинг №')+10:s1.index('Товар ID')])
+                    posting_list.append(s1[s1.index('Постинг')+8:s1.index('Товар ID')])
+                    print(posting_list[-1])
 
             df = pd.DataFrame({'id': complaint_id_list,
                                 'dt': date_list,
@@ -2021,6 +2144,201 @@ if 'ОСНОВНЫЕ' != '':
 
             return df
 
+        def COMPLAINT_scanit_move_analysis (SoupScanit_df: pd.DataFrame, MOVE_df: pd.DataFrame):
+            sn = 'проверка таблицы двидений'
+            if sn != '':
+                try:
+                    print(sn)
+                    if len(MOVE_df) == 0: # or MOVE_df['ts'].isna().sum() > 0:
+                        parse_check_list = pd.read_csv(MOJO_parse_check_doc)['val'].tolist()
+                        scanit_list = SoupScanit_df[~SoupScanit_df['scanit'].isin(parse_check_list)]['scanit'].tolist()
+                        if os.path.isdir(CUPS_dir + 'PARSE/') == False and os.path.isdir(CUPS_dir + 'MIS_BOOK/') == False and os.path.isdir(CUPS_dir + 'MIS_BOOK_RecalculationLimit/') == False:
+                            if len(scanit_list) > 0:
+                                def_initiator('PARSE', scanit_list)
+                                time.sleep(20)
+                                while os.path.isdir(CUPS_dir + 'PARSE/') == True:
+                                    time.sleep(10)
+
+                            MOVE_df = MOJO_data_frame()
+                            MOVE_df = MOVE_df[['Время движения',
+                                               'Экземпляр',
+                                               'ItemID',
+                                               'Поставка',
+                                               'ID склада',
+                                               'Тип движения',
+                                               'Откуда']]
+                            
+                            MOVE_df.columns = ['ts',
+                                               'scanit',
+                                               'item_id',
+                                               'supply_id',
+                                               'warehouse_id',
+                                               'mov',
+                                               'cell']
+                            
+                            
+                            for col in ['item_id','supply_id']:
+                                MOVE_df[col] = MOVE_df[col].replace('-', '0')
+                                MOVE_df[col] = MOVE_df[col].astype('int')
+
+                except Exception as e:
+                    ErrorCheck = 1
+                    res = f'Ошибка пункта {sn}: {e}'
+            
+            sn = 'переменные'
+            if sn != '':
+                try:
+                    print(sn)
+                    ErrorCheck = 0
+
+                    SoupScanit_df['dt'] = pd.to_datetime(SoupScanit_df['dt'])
+
+                    MOVE_df['ts'] = pd.to_datetime(MOVE_df['ts'], format='%d.%m.%Y %H:%M:%S')
+                    MOVE_df = MOVE_df.sort_values('ts', ascending=False)
+                    MOVE_df = MOVE_df.reset_index()
+                    del MOVE_df['index']
+
+                    type_of_mov_df = pd.read_excel(LamaReins_doc, sheet_name='types_of_mov')
+                    return_flow_mov = type_of_mov_df[type_of_mov_df['point'].isin(['возврат БО','возврат WMS'])]['MOJO'].tolist()
+                    direct_flow_mov = type_of_mov_df[type_of_mov_df['point'].isin(['приемка','приеморазмещение'])]['MOJO'].tolist()
+
+                    enums_df = pd.read_excel(LamaReins_doc, sheet_name='wms_enums')
+                    enums_df = enums_df[(enums_df['service'] == 'wms_storage') & (enums_df['alias'] == 'reason')]
+
+                except Exception as e:
+                    ErrorCheck = 1
+                    res = f'Ошибка пункта {sn}: {e}'
+
+            sn = 'расшифровка ризона'
+            if ErrorCheck == 0:
+                try:
+                    print(sn)
+                    def mov_col_culc(row):
+                        enum_id = int(row['reason'])
+                        print(enum_id)
+                        #time.sleep(10)
+                        try:
+                            rus_name = enums_df[enums_df['enum_id'] == enum_id]['rus_name'].tolist()[0]
+                            eng_name = enums_df[enums_df['enum_id'] == enum_id]['rus_name'].tolist()[0]
+                            if rus_name is not None:
+                                print(rus_name) 
+                                return rus_name
+                            else:
+                                print(eng_name)
+                                return eng_name
+                        except:
+                            print('-')
+                            return '-'
+                    
+                    #print(MOVE_df.columns.tolist())
+                    #print('mov' in MOVE_df.columns.tolist())
+                    #time.sleep(120)
+                    if 1 == 1: #'mov' in MOVE_df.columns.tolist() == False:
+                        print('Расшифровываем ризон')
+                        #time.sleep(60)
+                        MOVE_df.insert(5,'mov', MOVE_df.apply(mov_col_culc, axis=1))
+                        del MOVE_df['reason']
+                    else: print('cтолбец mov не нужен')
+
+                    print(MOVE_df)
+                    #time.sleep(120)
+
+                except Exception as e:
+                    ErrorCheck = 1
+                    res = f'Ошибка пункта {sn}: {e}'
+
+            sn = 'анализ движений'
+            if ErrorCheck == 0:
+                try:
+                    print(sn)
+                    MOVE_res_df = pd.DataFrame({'scanit':[],
+                                                'warehouse_id':[],
+                                                'flow':[],
+                                                'item':[],
+                                                'supply':[],
+                                                'cell':[]})
+                    def col_culc(row):
+                        scanit = str(row['scanit'])
+                        print(scanit)
+                        try:
+                            if 'вводные данные' != '':        
+                                dt_str_i = row['dt'] + timedelta(hours=23, minutes=59, seconds=59)
+                                print(dt_str_i)
+                                df = MOVE_df[(MOVE_df['scanit'] == scanit) & (MOVE_df['ts'] <= dt_str_i)]
+                                print(df)
+                                df = pd.DataFrame(df)
+
+                                # находим наш подбор
+                                selects = df[df['mov'] == 'Подбор']
+                                print(selects)
+                                select_index = int(min(list(selects.index)))
+
+                                # все движения до нашего подбора
+                                movs_pre_sel = df.loc[select_index:, 'mov'].tolist()
+                                print(movs_pre_sel)
+
+                            if 'поток' != '':
+                                # перебираем и определяем поток
+                                for mov in movs_pre_sel:
+                                    mov = str(mov)
+                                    if mov in return_flow_mov:
+                                        flow = 'ВП'
+                                        break
+                                    elif mov in direct_flow_mov:
+                                        flow = 'ПП'
+                                        break
+                                    else: flow = '-'
+
+                            if 'товар' != '':
+                                item = df.loc[select_index, 'item_id']
+                                
+                                
+                            if 'поставка' != '':
+                                supply = df.loc[select_index, 'supply_id']
+                                
+
+                            if 'склад' != '':
+                                warehouse_id = df.loc[select_index, 'warehouse_id']
+                                
+
+                            if 'ячейка подбора' != '':
+                                cell = df.loc[select_index, 'cell']
+                                print(cell)
+                        
+                        except:
+                            flow = item = supply = warehouse_id = cell = None
+
+                        print(item)
+                        print(supply)
+                        print(warehouse_id)
+                        print(cell)
+
+
+                        # добавляем в таблицу
+                        MOVE_res_df.loc[len(MOVE_res_df)] = [scanit, warehouse_id, flow, item, supply, cell]
+
+                    SoupScanit_df.apply(col_culc, axis=1)
+                    print(MOVE_res_df)
+
+
+                except Exception as e:
+                    ErrorCheck = 1
+                    res = f'Ошибка пункта {sn}: {e}'
+
+            sn = 'РЕЗУЛЬТАТ анализа двидений'
+            if ErrorCheck == 0:
+                try:
+                    print(sn)
+                    RES_df = pd.merge(SoupScanit_df, MOVE_res_df, on='scanit', how='left')
+                    res = RES_df
+                    
+
+                except Exception as e:
+                    ErrorCheck = 1
+                    res = f'Ошибка пункта {sn}: {e}'
+
+            return res
+
         def COMPLAINT_SoupPattern ():
             def_name = 'COMPLAINT_SoupPattern'
             comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
@@ -2029,6 +2347,22 @@ if 'ОСНОВНЫЕ' != '':
             try:
                 shutil.copy2(COMPLAINT__SoupPattern_doc, OUT_dir + dt.datetime.now().strftime('%d%H%M%S%f' + ' - Ж__суп-шаблон.xlsx'))
                 mes = 'Кинула суп-шаблон для жалоб в аут'
+
+            except:
+                mes = 'Ошибка! Что-то пошло не так:('
+
+            # удаляем папку процесса
+            shutil.rmtree(cup_dir)
+            chat(mes_sender, mes)
+
+        def COMPLAINT_ManSoupPattern ():
+            def_name = 'COMPLAINT_ManSoupPattern'
+            comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+            mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+            cup_dir = CUPS_dir + def_name + '/'
+            try:
+                shutil.copy2(COMPLAINT__ManSoupPattern_doc, OUT_dir + dt.datetime.now().strftime('%d%H%M%S%f' + ' - Ж__ручной суп-шаблон.xlsx'))
+                mes = 'Кинула ручной суп-шаблон для жалоб в аут'
 
             except:
                 mes = 'Ошибка! Что-то пошло не так:('
@@ -2084,6 +2418,8 @@ if 'ОСНОВНЫЕ' != '':
                     f = open(DocOutPrefix() + 'Ж__постинг_запрос.txt','w')
                     f.write(query[:-1])
                     f.close
+
+                    webbrowser.open(url_posting_max, new=2)
 
                     mes = 'Лови!'
 
@@ -2458,6 +2794,827 @@ if 'ОСНОВНЫЕ' != '':
             except Exception as e:
                 print(e)
                 mes = 'Ошибка! Что-то пошло не так:('
+
+            # удаляем папку процесса
+            if os.path.isdir(cup_dir) == True:
+                shutil.rmtree(cup_dir)
+            chat(mes_sender, mes)
+
+        def COMPLAINT_ToWork2 ():
+            def_name = 'COMPLAINT_ToWork2'
+            comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+            mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+            cup_dir = CUPS_dir + def_name + '/'
+            file_list = pd.read_csv(cup_dir + 'par_list.csv')['par_list'].tolist()
+            file = str(file_list[0])
+            try:
+                
+                if 1 == 1:
+                    ErrorCheck = 0
+                    step = 0
+                    step_num = 11
+
+                    def tech_mes(t):
+                        print(t)
+
+                sn = 'ПЕРЕМЕННЫЕ'
+                if sn != '':
+                    try:
+                        print(sn)
+                        FULL_df = pd.read_csv(COMPLAINT__SoupToGO_doc)
+                        posting_rep_df = pd.read_csv(file)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+
+                sn = 'СКАНИТЫ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        posting_rep_df = posting_rep_df[['ArticlePostingName', 'Barcode']].copy()
+                        posting_rep_df.columns = ['posting', 'scanit']
+                        print(posting_rep_df)
+                        posting_rep_df['dupl'] = posting_rep_df.apply(lambda row: posting_rep_df['posting'].tolist().count(row['posting']), axis=1)
+                        print(posting_rep_df)
+                        posting_rep_df = posting_rep_df[posting_rep_df['dupl'] == 1][['posting','scanit']]
+
+                        FULL_df = pd.merge(FULL_df, posting_rep_df, on='posting', how='left')
+                        FULL_df['scanit'] = FULL_df['scanit'].fillna('-')
+                        
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ДВИЖЕНИЯ СКАНИТОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        scanit_list = FULL_df['scanit'].tolist()
+                        q_body = ''
+                        for sc in scanit_list:
+                            q_body = q_body + "'" + str(sc) + "',"
+                        q_body = q_body[:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___ScanitMove_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ScanitMove_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        if  os.path.isfile(D_dir + 'ScanitMove.csv') == False:
+                            SqlExecuter(query).to_csv(D_dir + 'ScanitMove.csv', index=False)
+                        
+                        MOVE_df = pd.read_csv(D_dir + 'ScanitMove.csv')
+
+                        print(MOVE_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'АНАЛИЗ ДВИЖЕНИЙ СКАНИТОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df = COMPLAINT_scanit_move_analysis(FULL_df, MOVE_df)
+                        print('Ответ функции получен')
+                        print(FULL_df)
+                        print(FULL_df.info())
+
+                        FULL_val_rows_df = FULL_df[(FULL_df['item'] > 0) &
+                                                   (FULL_df['supply'] > 0) &
+                                                   (FULL_df['warehouse_id'] > 0)]
+
+                        #FULL_val_rows_df = FULL_df.copy()
+                        #FULL_val_rows_df = FULL_val_rows_df.dropna()
+                        
+                        #for col in ['item','supply','warehouse_id']:
+                        #    FULL_val_rows_df = FULL_val_rows_df[FULL_val_rows_df[col] != '-']
+                        #    print('замена прочерка')
+                        #    FULL_val_rows_df[col] = FULL_val_rows_df[col].astype('int')
+                        #    print('смена формата')
+                        
+                        #FULL_val_rows_df = FULL_val_rows_df[(FULL_val_rows_df['item'] > 0) &
+                        #                                    (FULL_val_rows_df['supply'] > 0) &
+                        #                                    (FULL_val_rows_df['warehouse_id'] > 0)]
+                        
+                        print(FULL_df)
+                        print(FULL_df.info())
+                        print(FULL_val_rows_df)
+                        print(FULL_val_rows_df.info())
+
+                        where_list = []
+                        def stock_query(row):
+                            where_list.append('(ItemId = ' + str(int(row['item'])) + ' AND SupplyId = ' + str(int(row['supply'])) + ' AND WarehouseId = ' + str(int(row['warehouse_id'])) + ') OR')
+                        
+                        FULL_val_rows_df.apply(stock_query, axis=1)
+                        q_body = ''
+                        for i in where_list:
+                            i = str(i)
+                            q_body = q_body + i + '\n'
+                        
+                        q_body = q_body[:-3]
+                        print(q_body)
+
+                        q_head = open(COM_dir + 'SQL_Query___AllStock_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___AllStock_2.txt').read()
+                        query = q_head + q_body + q_tail
+                        print(query)
+                        f = open('1.txt', 'w')
+                        f.write(query)
+                        f.close()
+                        
+
+                        if  os.path.isfile(D_dir + 'AllStock.csv') == False:
+                            print('Запускаю запрос')
+                            SqlExecuter(query).to_csv(D_dir + 'AllStock.csv', index=False)
+                        
+                        stock_df = pd.read_csv(D_dir + 'AllStock.csv')
+                        print(stock_df)
+                        print(stock_df.info())
+
+                        FULL_df = pd.merge(FULL_df, stock_df, on=['item', 'supply', 'warehouse_id'], how='left')
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'КАТЕГОРИЯ ЖАЛОБЫ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['stock'] = FULL_df['stock'].fillna(0)
+                        def comp_cat(row):
+                            try:
+                                if row['flow'] == '-' or row['flow'] is None:
+                                    return 'B'
+                                elif row['flow'] == 'ВП':
+                                    return 'C'
+
+                                elif row['flow'] == 'ПП':
+                                    if row['stock'] == 0:
+                                        return 'D'
+                                    else: return 'A'
+                                                                        
+                                else: return 'error'
+
+                            except:
+                                return 'B'
+                            
+                        FULL_df['category'] = FULL_df.apply(comp_cat, axis=1)
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ОБРАБОТКА ОСТАТКОВ категории В'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['stock'] = FULL_df.apply(lambda row: '-' if row['category'] == 'B' else row['stock'], axis=1)
+                        #FULL_df = FULL_df.fillna('-')
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ССЫЛКА'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['link'] = FULL_df.apply(lambda row: 'https://crm.o3team.ru/complaints/complaint/' + str(row['id']) + '/tickets', axis=1)
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'НАЗВАНИЯ СКЛАДОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        warehouse_id_list = FULL_df[FULL_df['warehouse_id'] > 0]['warehouse_id'].tolist()
+                        q_body = str(warehouse_id_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___Warehouse_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___Warehouse_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        warehouse_df = SqlExecuter(query)
+                        print(warehouse_df)
+                        print(warehouse_df.info())
+                        print(FULL_df)
+                        print(FULL_df.info())
+                        #FULL_df['warehouse_id'] = FULL_df['warehouse_id'].astype('int')
+                        FULL_df = pd.merge(FULL_df, warehouse_df, on='warehouse_id', how='left')
+                        FULL_df['warehouse'] = FULL_df['warehouse'].fillna('-')
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'EAN'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        item_list = FULL_df[FULL_df['item'] > 0]['item'].astype('int').tolist()
+                        q_body = str(item_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___Ean_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___Ean_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        print(query)
+                        ean_df = SqlExecuter(query)
+                        print(ean_df)
+
+                        def concat_ean_col_culc(row):
+                            item = int(row['item'])
+                            ean_list = ean_df[ean_df['item'] == item]['ean'].tolist()
+                            ean_full = ''
+                            for e in ean_list:
+                                e = str(e)
+                                if len(ean_full) > 0:
+                                    ean_full = ean_full + ' | ' + e
+                                else:
+                                    ean_full = ean_full + e
+
+                            return ean_full
+                        
+                        ean_df['ean'] = ean_df.apply(concat_ean_col_culc,axis=1)
+                        ean_df = ean_df.drop_duplicates()
+
+                        print(ean_df)
+                        print(ean_df.info())
+
+                        FULL_df = pd.merge(FULL_df, ean_df, on='item', how='left')
+                        FULL_df['ean'] = FULL_df['ean'].fillna('-')
+                        print(FULL_df)
+                        print(FULL_df.info())
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'КАТЕГОРИИ ТОВАРОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        q_head = open(COM_dir + 'SQL_Query___ItemCategory_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ItemCategory_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        desc_df = SqlExecuter(query)
+                        print(desc_df)
+
+                        FULL_df = pd.merge(FULL_df, desc_df, on='item', how='left')
+
+                        for i in range(1,5):
+                            col = 'desc' + str(i)
+                            FULL_df[col] = FULL_df[col].fillna('-')
+
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'КОММЕНТАРИЙ ВОЗВРАТА'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        posting_list = FULL_df['posting'].tolist()
+                        q_body = str(posting_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___ReturnComment_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ReturnComment_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        return_comment_df = SqlExecuter(query)
+                        print(return_comment_df)
+
+                        FULL_df = pd.merge(FULL_df, return_comment_df, on='posting', how='left')
+                        FULL_df['comment'] = FULL_df['comment'].fillna('-')
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ФАЙЛ В РАБОТУ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        RES_df = FULL_df[['dt',
+                                          'id',
+                                          'warehouse_id',
+                                          'warehouse',
+                                          'detail',
+                                          'posting',
+                                          'scanit',
+                                          'item',
+                                          'supply',
+                                          'ean',
+                                          'desc1',
+                                          'desc2',
+                                          'desc3',
+                                          'desc4',
+                                          'cell',
+                                          'flow',
+                                          'stock',
+                                          'category',
+                                          'link',
+                                          'comment']]
+
+                        RES_df.to_excel(DocOutPrefix() + 'Ж в работу.xlsx', index=False)
+                        mes = 'Лови!'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+                
+
+            except:
+                mes = 'Ошибка! Что-то пошло не так:('
+
+
+            # удаляем папку процесса
+            if os.path.isdir(cup_dir) == True:
+                shutil.rmtree(cup_dir)
+            chat(mes_sender, mes)
+
+        def COMPLAINT_SoupToGoFromMan ():
+            def_name = 'COMPLAINT_SoupToGoFromMan'
+            comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+            mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+            cup_dir = CUPS_dir + def_name + '/'
+            file_list = pd.read_csv(cup_dir + 'par_list.csv')['par_list'].tolist()
+            file = str(file_list[0])
+            try:
+                df = pd.read_excel(file, sheet_name='жалобы')
+
+                if 'Удаляем предыдущие результаты операции' != '':
+                    del_doc_list = [COMPLAINT__Soup_Scanit_doc, COMPLAINT__Soup_Scanit_Stock_doc]
+                    for dd in del_doc_list:
+                        if os.path.isfile(dd) == True:
+                            os.remove(dd)
+                
+                df.to_csv(COMPLAINT__SoupToGO_doc, index=False)
+
+
+                def_initiator('COMPLAINT_PostingQuery', ['-'])
+                mes = 'Суп сохранила. Запускаю генерацию постинг-запроса'
+
+            except:
+                mes = 'Ошибка! Что-то пошло не так:('
+
+            # удаляем папку процесса
+            if os.path.isdir(cup_dir) == True:
+                shutil.rmtree(cup_dir)
+            chat(mes_sender, mes)
+
+        def COMPLAINT_Flow ():
+            def_name = 'COMPLAINT_Flow'
+            comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+            mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+            cup_dir = CUPS_dir + def_name + '/'
+            par_list = pd.read_csv(cup_dir + 'par_list.csv')['par_list'].tolist()
+            par = str(par_list[0])
+            try:
+                
+                if 1 == 1:
+                    ErrorCheck = 0
+                    step = 0
+                    step_num = 11
+
+                    def tech_mes(t):
+                        print(t)
+
+                sn = 'ПЕРЕМЕННЫЕ'
+                if sn != '':
+                    try:
+                        print(sn)
+                        now = dt.datetime.now()
+                        mon_df = pd.read_excel(LamaReins_doc, sheet_name='wms_enums')
+                        par_list = Enigma('#' + par)
+                        mon_str = mon_df[mon_df['eng_name'] == Enigma(' ' + par_list[0])[1]] \
+                                                               ['rus_name'].tolist()[0][1:]
+                        RES_dict = {}
+                        MOVE_doc = D_dir + 'ScanitMove.csv'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+
+                sn = 'ТС - ПОСТИНГ - СКАНИТ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        RES_dict['id'] = now.strftime('%Y%m%d_%H%M%S')
+                        RES_dict['date'] = now.strftime('%Y-%m-%d')
+                        RES_dict['dt'] = par_list[0][-4:] + '-' + mon_str + '-' + par_list[0][:2]
+                        RES_dict['posting'] = par_list[1]
+                        RES_dict['scanit'] = par_list[2]
+
+                        print(RES_dict)
+                        print(RES_dict['scanit'])
+                        mes = f'Пункт {sn} выполнен'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ДВИЖЕНИЯ СКАНИТОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        # получаем движения сканита
+                        '''
+                        q_body = ''
+                        for sc in scanit_list:
+                            q_body = q_body + "'" + str(sc) + "',"
+                        q_body = q_body[:-1]
+                        '''
+                        q_body = "'" + RES_dict['scanit'] + "'"
+
+                        q_head = open(COM_dir + 'SQL_Query___ScanitMove_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ScanitMove_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+
+
+
+                        r = SqlExecuter(query)
+                        print(r)
+
+                        #f = open('sc.txt', 'w')
+                        #f.write(query)
+                        #f.close()
+                        query_res_df = SqlExecuter(query)
+
+                        
+                        if  os.path.isfile(MOVE_doc) == False:
+                            query_res_df.to_csv(MOVE_doc, index=False)
+                        else:
+                            query_res_df.to_csv(MOVE_doc, mode='a', index= False , header= False)
+                        
+                        MOVE_df = pd.read_csv(MOVE_doc)
+                        MOVE_df = MOVE_df.drop_duplicates()
+                        MOVE_df.to_csv(MOVE_doc, index=False)
+
+                        print(MOVE_df)
+                        
+
+                        mes = f'Пункт {sn} выполнен'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                
+                sn = 'АНАЛИЗ ДВИЖЕНИЙ СКАНИТОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df = COMPLAINT_scanit_move_analysis(pd.DataFrame(RES_dict), MOVE_df)
+                        print('Ответ функции получен')
+                        print(FULL_df)
+                        print(FULL_df.info())
+
+                        FULL_val_rows_df = FULL_df[(FULL_df['item'] > 0) &
+                                                    (FULL_df['supply'] > 0) &
+                                                    (FULL_df['warehouse_id'] > 0)]
+
+                        #FULL_val_rows_df = FULL_df.copy()
+                        #FULL_val_rows_df = FULL_val_rows_df.dropna()
+                        
+                        #for col in ['item','supply','warehouse_id']:
+                        #    FULL_val_rows_df = FULL_val_rows_df[FULL_val_rows_df[col] != '-']
+                        #    print('замена прочерка')
+                        #    FULL_val_rows_df[col] = FULL_val_rows_df[col].astype('int')
+                        #    print('смена формата')
+                        
+                        #FULL_val_rows_df = FULL_val_rows_df[(FULL_val_rows_df['item'] > 0) &
+                        #                                    (FULL_val_rows_df['supply'] > 0) &
+                        #                                    (FULL_val_rows_df['warehouse_id'] > 0)]
+                        
+                        print(FULL_df)
+                        print(FULL_df.info())
+                        print(FULL_val_rows_df)
+                        print(FULL_val_rows_df.info())
+
+                        where_list = []
+                        def stock_query(row):
+                            where_list.append('(ItemId = ' + str(int(row['item'])) + ' AND SupplyId = ' + str(int(row['supply'])) + ' AND WarehouseId = ' + str(int(row['warehouse_id'])) + ') OR')
+                        
+                        FULL_val_rows_df.apply(stock_query, axis=1)
+                        q_body = ''
+                        for i in where_list:
+                            i = str(i)
+                            q_body = q_body + i + '\n'
+                        
+                        q_body = q_body[:-3]
+                        print(q_body)
+
+                        q_head = open(COM_dir + 'SQL_Query___AllStock_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___AllStock_2.txt').read()
+                        query = q_head + q_body + q_tail
+                        print(query)
+                        f = open('1.txt', 'w')
+                        f.write(query)
+                        f.close()
+                        
+
+                        if  os.path.isfile(D_dir + 'AllStock.csv') == False:
+                            print('Запускаю запрос')
+                            SqlExecuter(query).to_csv(D_dir + 'AllStock.csv', index=False)
+                        
+                        stock_df = pd.read_csv(D_dir + 'AllStock.csv')
+                        print(stock_df)
+                        print(stock_df.info())
+
+                        FULL_df = pd.merge(FULL_df, stock_df, on=['item', 'supply', 'warehouse_id'], how='left')
+                        print(FULL_df)
+                        
+                        ######################################
+                        mes = f'Пункт {sn} выполнен'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                '''
+                sn = 'КАТЕГОРИЯ ЖАЛОБЫ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['stock'] = FULL_df['stock'].fillna(0)
+                        def comp_cat(row):
+                            try:
+                                if row['flow'] == '-' or row['flow'] is None:
+                                    return 'B'
+                                elif row['flow'] == 'ВП':
+                                    return 'C'
+
+                                elif row['flow'] == 'ПП':
+                                    if row['stock'] == 0:
+                                        return 'D'
+                                    else: return 'A'
+                                                                        
+                                else: return 'error'
+
+                            except:
+                                return 'B'
+                            
+                        FULL_df['category'] = FULL_df.apply(comp_cat, axis=1)
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ОБРАБОТКА ОСТАТКОВ категории В'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['stock'] = FULL_df.apply(lambda row: '-' if row['category'] == 'B' else row['stock'], axis=1)
+                        #FULL_df = FULL_df.fillna('-')
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'ССЫЛКА'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        FULL_df['link'] = FULL_df.apply(lambda row: 'https://crm.o3team.ru/complaints/complaint/' + str(row['id']) + '/tickets', axis=1)
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'НАЗВАНИЯ СКЛАДОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        warehouse_id_list = FULL_df[FULL_df['warehouse_id'] > 0]['warehouse_id'].tolist()
+                        q_body = str(warehouse_id_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___Warehouse_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___Warehouse_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        warehouse_df = SqlExecuter(query)
+                        print(warehouse_df)
+                        print(warehouse_df.info())
+                        print(FULL_df)
+                        print(FULL_df.info())
+                        #FULL_df['warehouse_id'] = FULL_df['warehouse_id'].astype('int')
+                        FULL_df = pd.merge(FULL_df, warehouse_df, on='warehouse_id', how='left')
+                        FULL_df['warehouse'] = FULL_df['warehouse'].fillna('-')
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'EAN'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        item_list = FULL_df[FULL_df['item'] > 0]['item'].astype('int').tolist()
+                        q_body = str(item_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___Ean_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___Ean_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        print(query)
+                        ean_df = SqlExecuter(query)
+                        print(ean_df)
+
+                        def concat_ean_col_culc(row):
+                            item = int(row['item'])
+                            ean_list = ean_df[ean_df['item'] == item]['ean'].tolist()
+                            ean_full = ''
+                            for e in ean_list:
+                                e = str(e)
+                                if len(ean_full) > 0:
+                                    ean_full = ean_full + ' | ' + e
+                                else:
+                                    ean_full = ean_full + e
+
+                            return ean_full
+                        
+                        ean_df['ean'] = ean_df.apply(concat_ean_col_culc,axis=1)
+                        ean_df = ean_df.drop_duplicates()
+
+                        print(ean_df)
+                        print(ean_df.info())
+
+                        FULL_df = pd.merge(FULL_df, ean_df, on='item', how='left')
+                        FULL_df['ean'] = FULL_df['ean'].fillna('-')
+                        print(FULL_df)
+                        print(FULL_df.info())
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'КАТЕГОРИИ ТОВАРОВ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        q_head = open(COM_dir + 'SQL_Query___ItemCategory_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ItemCategory_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        desc_df = SqlExecuter(query)
+                        print(desc_df)
+
+                        FULL_df = pd.merge(FULL_df, desc_df, on='item', how='left')
+
+                        for i in range(1,5):
+                            col = 'desc' + str(i)
+                            FULL_df[col] = FULL_df[col].fillna('-')
+
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                sn = 'КОММЕНТАРИЙ ВОЗВРАТА'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        posting_list = FULL_df['posting'].tolist()
+                        q_body = str(posting_list)[1:-1]
+
+                        q_head = open(COM_dir + 'SQL_Query___ReturnComment_1.txt').read()
+                        q_tail = open(COM_dir + 'SQL_Query___ReturnComment_2.txt').read()
+
+                        query = q_head + q_body + q_tail
+                        return_comment_df = SqlExecuter(query)
+                        print(return_comment_df)
+
+                        FULL_df = pd.merge(FULL_df, return_comment_df, on='posting', how='left')
+                        FULL_df['comment'] = FULL_df['comment'].fillna('-')
+                        print(FULL_df)
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+
+                
+                sn = 'ФАЙЛ В РАБОТУ'
+                if ErrorCheck == 0:
+                    try:
+                        step = step + 1
+                        tech_mes(f'{step} из {step_num}: {sn}')
+                        ######################################
+                        RES_df = FULL_df[['dt',
+                                            'id',
+                                            'warehouse_id',
+                                            'warehouse',
+                                            'detail',
+                                            'posting',
+                                            'scanit',
+                                            'item',
+                                            'supply',
+                                            'ean',
+                                            'desc1',
+                                            'desc2',
+                                            'desc3',
+                                            'desc4',
+                                            'cell',
+                                            'flow',
+                                            'stock',
+                                            'category',
+                                            'link',
+                                            'comment']]
+
+                        RES_df.to_excel(DocOutPrefix() + 'Ж в работу.xlsx', index=False)
+                        mes = 'Лови!'
+
+                    except Exception as e:
+                        ErrorCheck = 1
+                        mes = f'Ошибка пункта {sn}: {e}'
+                        print(mes)
+                '''
+
+            except:
+                mes = 'Ошибка! Что-то пошло не так:('
+
 
             # удаляем папку процесса
             if os.path.isdir(cup_dir) == True:
@@ -3657,3 +4814,131 @@ if 'ОСНОВНЫЕ' != '':
                 if os.path.isdir(cup_dir) == True:
                     shutil.rmtree(cup_dir)
                 chat(mes_sender, mes)
+
+if 'тестовые' != '':
+
+    def new_def ():
+        def_name = 'new_def'
+        comm_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
+        mes_sender = comm_df[comm_df['name'] == def_name]['desc'].tolist()[0]
+        cup_dir = CUPS_dir + def_name + '/'
+        #file_list = pd.read_csv(cup_dir + 'par_list.csv')['par_list'].tolist()
+        #file = str(file_list[0])
+        try:
+            
+            mes = 'Готово!'
+
+        except:
+            mes = 'Ошибка! Что-то пошло не так:('
+
+        # удаляем папку процесса
+        if os.path.isdir(cup_dir) == True:
+            shutil.rmtree(cup_dir)
+        chat(mes_sender, mes)
+
+
+    if 1 == 2:
+        df = pd.read_csv(MIS_BOOK_doc)
+        df = df[df['date'] == '2025-09-15']
+        print(df)
+
+        #res_df = df.groupby('status')['spec'].count()
+        #g2 = df.groupby(['spec','status'])['mis_id'].count()
+        #print(res_df)
+        #print(g2)
+
+        g3 = df.pivot_table(index='status', columns='spec', values='mis_id', aggfunc='count').reset_index()
+        print(g3)
+
+        columns = g3.columns.tolist()
+        print(columns)
+
+        data = []
+        def tab_to_lists (row):
+            row_list = []
+            for col in columns:
+                row_list.append(str(row[col]))
+            data.append(row_list)
+
+        g3.apply(tab_to_lists, axis=1)
+
+        print(data)
+        # расчёт максимальной длинны колонок 
+        max_columns = [] # список максимальной длинны колонок 
+        for col in zip(*data): 
+            len_el = [] 
+            [len_el.append(len(el)) for el in col]   
+            max_columns.append(max(len_el))
+
+        # вывод таблицы с колонками максимальной длинны строки каждого столбца 
+
+        # печать шапки таблицы 
+        for n, column in enumerate(columns): 
+            print(f'{column:{max_columns[n]+1}}', end='') 
+        print() 
+ 
+        # печать разделителя шапки '=' 
+        r = f'{"="*sum(max_columns)+"="*5}' 
+        print(r[:-1]) 
+        
+        # печать тела таблицы 
+        for el in data: 
+            for n, col in enumerate(el): 
+                print(f'{col:{max_columns[n]+1}}', end='') # выравнвание по правому краю > 
+            print()
+
+    if 1 == 2:
+        con_info = {'host': 'vertica-sandbox.s.o3.ru',
+                    'port': 5433,
+                    'user': 'aramiso',
+                    'password': 'Block254!',
+                    'database': 'OLAP'}
+        
+        connection = vertica_python.connect(**con_info)
+        cursor = connection.cursor()
+        #cursor.execute("""SELECT  CPAN.SourceKey AS posting,
+        #                            IFNULL(AGCRE.Comment,'-') AS comment
+        #                            FROM    dwh_data.Anc_ClientPosting CPAN
+        #                            LEFT JOIN dwh_data.Bridge_ClientReturn_Item_Exemplar_InventoryExemplar_AccountExemplar_ClientPosting_ClientReturnReason BRCRE USING(ClientPostingId)
+        #                            LEFT JOIN dwh_data.AtrGrp_ClientReturn_Item_Exemplar_InventoryExemplar_AccountExemplar_ClientPosting_ClientReturnReason_Attributes AGCRE USING(ClientReturn_Item_Exemplar_InventoryExemplar_AccountExemplar_ClientPosting_ClientReturnReasonId)
+        #
+        #                            WHERE   CPAN.SourceKey IN 
+        #                                                            (
+        #                            ---------------------------------
+        #                            '49261999-0097-1',
+        #                            '52130733-0147-9',
+        #                            '29726726-0147-2'
+        #                                                            
+        #                            ---------------------------------
+        #                                                            ))"""
+        #                )
+        #cursor.execute("SELECT  TO_CHAR (at::timestamptz at TIME zone 'MSK', 'DD.MM.YYYY HH:MI:SS') AS ts, instance_id, item_id, supply_id FROM	wms_csharp_service_storage_all_new.WmsStorageMovementLogsAdded_MovementLog MOLO WHERE	warehouse_id = 18044249781000 AND instance_id = 22858980965 ORDER BY ts DESC")
+        cursor.execute(open('1.txt').read())
+        res = cursor.fetchall()
+        print(res)
+        connection.close()
+
+        df = pd.DataFrame()
+        cols_list = [d.name for d in cursor.description]
+        for c in cols_list:
+            df[c] = []
+
+        for row in res:
+            df.loc[len(df)] = row
+        
+        print(df)
+
+    if 1 == 2:
+        SoupScanit_df = pd.read_csv('SoupScanit.csv')
+        MOVE_df = pd.read_csv('move.csv')
+
+        res = COMPLAINT_scanit_move_analysis(SoupScanit_df, MOVE_df)
+
+        print(res)
+
+    if 1 == 2:
+        print(int('01'))
+        print(int('1 '))
+        print(1 + \
+              2 + \
+              5)

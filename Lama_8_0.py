@@ -98,7 +98,7 @@ else:
             combo_commands = Combobox(window, width=45)
             LR_commands_df = pd.read_excel(LamaReins_doc, sheet_name='commands')
             combo_commands['values'] = tuple(LR_commands_df[LR_commands_df['gui'] == 'combo_commands']['desc'].tolist())
-            #combo.current(None)  # установите вариант по умолчанию
+            combo_commands.current(0)  # установите вариант по умолчанию
             combo_commands.grid(column=1, row=3)
 
         if 'лейбл параметра' != '':
@@ -106,7 +106,7 @@ else:
             lbl_com_par.grid(column=1, row=4)
 
         if 'ПОЛЕ ВВОДА параметра' !='':
-            ent_com_par = Entry(window, width=20)
+            ent_com_par = Entry(window, width=45)
             ent_com_par.grid(column=1, row=5)
 
         if 'лейбл кнопки го' != '':
@@ -170,4 +170,5 @@ else:
         Repeater(1, def_kicker)
         Repeater(1, def_starter)
         Repeater(3, MIS_GO)
+        #MIS_GO()
         window.mainloop() 
